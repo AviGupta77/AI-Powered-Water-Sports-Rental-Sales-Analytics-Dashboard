@@ -70,39 +70,44 @@ This project followed a prompt-driven dashboard development workflow using Googl
 ### Dataset Generation Prompt
 
 ```text
-I'd like to get your help creating a fake data set that contains [sales information for a water sports rental shop that rents kayaks, paddle boards, etc.]
+I'd like to get your help creating a fake data set that contains [sales information for 
+a water sports rental shop that rents kayaks, paddle boards, etc.]
 
-[The data set should contain 3,000 rows of data for the entire year, with seasonality trends and more sales in the summer months. There should also be a column for the employee's name responsible for the sale, with a total of 10 different employees. Each row should be for one rental item.]
+[The data set should contain 3,000 rows of data for the entire year, with seasonality 
+trends and more sales in the summer months. There should also be a column for the 
+employee's name responsible for the sale, with a total of 10 different employees. Each 
+row should be for one rental item.]
 
-Do you have any questions on this task?
+Do you have any questions on this task? 
 ```
 
 ### Dashboard Design Prompt
 
 ```text
-I'd like to get your help designing a dashboard for the attached data set.
-
-The dashboard should contain [simple charts that are easy for my coworkers (audience) to understand.]
-
-[Audience is business professionals across several departments, and not all are well versed in data analytics and data visualization. So keep it simple.]
-
-[Make sure the dashboard includes the following:
-
-- Line chart for sales over time
-- Bar chart for sales by team member]
-
-Provide additional charts or metrics that are interesting.
-
-[Keep the dashboard simple with 4 to 6 charts max and some cards]
-
-[Use my brand color palette or default Office theme]
-
-Consider data visualization best practices when designing the charts.
-
-The dashboard will eventually be built into Excel, so take that into consideration when designing. But I would first like you to code an interactive web page so we can quickly iterate on the design.
-
-The output should be a web page.
-
+I'd like to get your help designing a dashboard for the attached data set. 
+ 
+The dashboard should contain [simple charts that are easy for my coworkers (audience) to 
+understand.] 
+ 
+[Audience is business professionals across several departments, and not all are well 
+versed in data analytics and data visualization. So keep it simple.] 
+ 
+[Make sure the dashboard includes the following: - Line chart for sales over time - Bar chart for sales by team member] 
+ 
+Provide additional charts or metrics that are interesting. 
+ 
+[Keep the dashboard simple with 4 to 6 charts max and some cards] 
+ 
+[Use my brand color palette or default Office theme] 
+ 
+Consider data visualization best practices when designing the charts. 
+ 
+The dashboard will eventually be built into Excel, so take that into consideration when 
+designing. But I would first like you to code an interactive web page so we can quickly 
+iterate on the design. 
+ 
+The output should be a web page. 
+ 
 What questions do you have about this project/task before you get started?
 ```
 
