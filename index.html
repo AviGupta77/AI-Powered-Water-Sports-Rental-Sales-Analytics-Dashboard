@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Sports Rental Sales Dashboard 2026</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PapaParse for robust, high-performance CSV Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Tailwind Custom Config for Theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7', // Steel Blue Primary
+                            600: '#0369a1',
+                            700: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        office: {
+                            accent: '#1f4e79', // Dark Blue
+                            success: '#2e7d32', // Excel Green
+                            warning: '#ed7d31', // Office Orange
+                            neutral: '#595959'  // Charcoal
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 250px;
+            width: 100%;
+        }
+        /* Custom scrollbar for modern visual appearance */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased text-slate-800">
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR CONTAINER -->
+        <aside class="w-80 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 shrink-0">
+            <!-- Sidebar Header -->
+            <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
+                <div class="p-2 bg-brand-500 rounded-lg text-white">
+                    <i data-lucide="waves" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white">Water Sports</h1>
+                    <p class="text-xs text-slate-400 font-medium">Enterprise Analytics Panel</p>
+                </div>
+            </div>
+
+            <!-- Dynamic Connection Status Indicator -->
+            <div class="px-6 py-3 bg-slate-800/50 border-b border-slate-800 flex items-center justify-between">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Data Source</span>
+                <div id="connectionStatus" class="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span>Initializing...</span>
+                </div>
+            </div>
+
+            <!-- Sidebar Content & Interactive Controls -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Data Upload Zone (Bypasses CORS limitations for local runs) -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Dynamic Data Sourcing</label>
+                    <div id="dropZone" class="group relative flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-4 bg-slate-800/40 text-center transition-all duration-200 cursor-pointer">
+                        <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-500 group-hover:text-brand-500 transition-colors mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-300">Drag & Drop CSV File</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Or click to upload locally</p>
+                        <input type="file" id="manualCsvInput" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Launch Site Filter Dropdown -->
+                <div class="space-y-2">
+                    <label for="filterLaunchSite" class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Launch Site</label>
+                    <div class="relative">
+                        <select id="filterLaunchSite" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500 appearance-none cursor-pointer">
+                            <option value="ALL">All Launch Sites</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather Condition Filter Dropdown -->
+                <div class="space-y-2">
+                    <label for="filterWeather" class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Weather Condition</label>
+                    <div class="relative">
+                        <select id="filterWeather" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500 appearance-none cursor-pointer">
+                            <option value="ALL">All Weather Conditions</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Type Filter Dropdown -->
+                <div class="space-y-2">
+                    <label for="filterCustomerType" class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Customer Segment</label>
+                    <div class="relative">
+                        <select id="filterCustomerType" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500 appearance-none cursor-pointer">
+                            <option value="ALL">All Customer Types</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multi-select Season Checkboxes -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Operating Seasons</label>
+                    <div id="filterSeason" class="grid grid-cols-2 gap-2">
+                        <!-- Filled in dynamically -->
+                    </div>
+                </div>
+
+                <!-- Reset Filter Suite Action -->
+                <button id="resetFilters" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-sm font-semibold transition-all duration-150 flex items-center justify-center space-x-2 border border-slate-700">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span>Reset Filter Suite</span>
+                </button>
+            </div>
+
+            <!-- Sidebar Institutional Footer -->
+            <div class="p-6 border-t border-slate-800 bg-slate-950/40">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-sm">
+                        BI
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-white">Consulting Engine</p>
+                        <p class="text-[10px] text-slate-500">v2.5.0 • Live Data Sync</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN DASHBOARD PANEL -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            
+            <!-- UPPER TOP BAR -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+                <div class="flex items-center space-x-4">
+                    <h2 class="text-xl font-bold text-slate-900 tracking-tight">Water Sports Rental Sales Dashboard 2026</h2>
+                    <span id="recordCountBadge" class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700 border border-brand-100">
+                        Loading Record Index...
+                    </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Export Options Dropdown Button -->
+                    <div class="relative inline-block text-left" id="exportMenuContainer">
+                        <button id="btnExportMenu" class="flex items-center space-x-2 bg-office-accent hover:bg-brand-900 text-white font-semibold text-sm px-4  py-2 rounded-lg shadow-sm transition duration-150 ease-in-out">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Export Center</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </button>
+                        <!-- Dropdown Menu Options -->
+                        <div id="exportMenu" class="hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 focus:outline-none z-50">
+                            <div class="py-1">
+                                <button onclick="exportFilteredCSV()" class="group flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <i data-lucide="filter" class="mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+                                    Export Filtered Data (CSV)
+                                </button>
+                                <button onclick="exportKPISummary()" class="group flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <i data-lucide="calculator" class="mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+                                    Export KPI Summary (CSV)
+                                </button>
+                            </div>
+                            <div class="py-1">
+                                <button onclick="exportFullCSV()" class="group flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <i data-lucide="database" class="mr-3 h-4 w-4 text-slate-400 group-hover:text-slate-500"></i>
+                                    Export Full Dataset (CSV)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ANALYTICAL CONTENT CANVAS -->
+            <div class="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50/50">
+
+                <!-- MAIN ENTERPRISE KPI CARDS GRID -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <!-- Total Revenue KPI Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Sales Revenue</span>
+                            <div class="p-2 bg-brand-50 rounded-lg text-brand-600">
+                                <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 id="cardTotalSales" class="text-2xl font-extrabold text-slate-900 tracking-tight">Calculating...</h3>
+                            <p class="text-xs text-slate-500 mt-1">Aggregate Gross Billings</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Rental Transactions KPI Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Bookings</span>
+                            <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                                <i data-lucide="calendar" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 id="cardTotalRentals" class="text-2xl font-extrabold text-slate-900 tracking-tight">Calculating...</h3>
+                            <p class="text-xs text-slate-500 mt-1">Individual Rental Orders</p>
+                        </div>
+                    </div>
+
+                    <!-- Average Order Value (AOV) KPI Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Average Ticket Size</span>
+                            <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 id="cardAOV" class="text-2xl font-extrabold text-slate-900 tracking-tight">Calculating...</h3>
+                            <p class="text-xs text-slate-500 mt-1">Average Revenue Per Ticket</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Items Rented KPI Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Items Out-rented</span>
+                            <div class="p-2 bg-orange-50 rounded-lg text-orange-600">
+                                <i data-lucide="ship" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 id="cardTotalItems" class="text-2xl font-extrabold text-slate-900 tracking-tight">Calculating...</h3>
+                            <p class="text-xs text-slate-500 mt-1">Watercraft Units Dispensed</p>
+                        </div>
+                    </div>
+
+                    <!-- Add-on Attachment Rate KPI Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Upsell Attachment</span>
+                            <div class="p-2 bg-rose-50 rounded-lg text-rose-600">
+                                <i data-lucide="package-plus" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 id="cardAddonRate" class="text-2xl font-extrabold text-slate-900 tracking-tight">Calculating...</h3>
+                            <p class="text-xs text-slate-500 mt-1">Transactions with Add-on Included</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN INTERACTIVE GRAPH CANVAS GRID -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Chart Block 1: Revenue Over Time -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="font-bold text-slate-900">Total Monthly Revenue Trend</h4>
+                                <p class="text-xs text-slate-400">Chronological billing trajectory</p>
+                            </div>
+                            <i data-lucide="presentation" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartRevenueTrend"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart Block 2: Revenue by Launch Site -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="font-bold text-slate-900">Revenue Contribution by Site</h4>
+                                <p class="text-xs text-slate-400">Performance split by geo-point</p>
+                            </div>
+                            <i data-lucide="map" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartSiteDistribution"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart Block 3: Popular Rental Items -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="font-bold text-slate-900">Popular Rental Items</h4>
+                                <p class="text-xs text-slate-400">Unit counts sorted by popularity</p>
+                            </div>
+                            <i data-lucide="bar-chart-2" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartItemPopularity"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart Block 4: Customer Segments -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="font-bold text-slate-900">Revenue by Customer Segment</h4>
+                                <p class="text-xs text-slate-400">Segment classification split</p>
+                            </div>
+                            <i data-lucide="users" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartCustomerSegments"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DETAILED TRANSACTION TABLE COMPONENT -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <!-- Table Header & Live Search Bar Controls -->
+                    <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h4 class="font-bold text-slate-900">Granular Sales Ledger</h4>
+                            <p class="text-xs text-slate-400">Live search and paginated order listings</p>
+                        </div>
+                        <!-- Search Box & Table Size Controller -->
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                <input type="text" id="tableSearchInput" placeholder="Search orders..." class="bg-slate-50 border border-slate-200 text-slate-700 placeholder-slate-400 rounded-lg pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 w-52">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                                </div>
+                            </div>
+                            <select id="pageSizeSelect" class="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500">
+                                <option value="10">10 Rows</option>
+                                <option value="25" selected>25 Rows</option>
+                                <option value="50">50 Rows</option>
+                                <option value="100">100 Rows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Table Block -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    <th class="py-3 px-6">Rental ID</th>
+                                    <th class="py-3 px-6">Rental Date</th>
+                                    <th class="py-3 px-6">Customer Segment</th>
+                                    <th class="py-3 px-6">Rental Item</th>
+                                    <th class="py-3 px-6">Duration</th>
+                                    <th class="py-3 px-6 text-center">Qty</th>
+                                    <th class="py-3 px-6">Upsell Item</th>
+                                    <th class="py-3 px-6 text-right">Upsell Revenue</th>
+                                    <th class="py-3 px-6 text-right">Total Revenue</th>
+                                    <th class="py-3 px-6">Attendant</th>
+                                    <th class="py-3 px-6">Launch Site</th>
+                                    <th class="py-3 px-6">Weather</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="text-xs text-slate-600 divide-y divide-slate-100">
+                                <!-- Loaded dynamically via system states -->
+                            </tbody>
+                            <tfoot class="bg-slate-50 font-semibold text-xs text-slate-900 border-t border-slate-200">
+                                <tr>
+                                    <td colspan="5" class="py-3 px-6">Filtered Aggregations</td>
+                                    <td id="tblTotalQty" class="py-3 px-6 text-center">-</td>
+                                    <td colspan="1" class="py-3 px-6"></td>
+                                    <td id="tblTotalAddon" class="py-3 px-6 text-right text-slate-700">-</td>
+                                    <td id="tblTotalSales" class="py-3 px-6 text-right font-extrabold text-brand-600">-</td>
+                                    <td colspan="3" class="py-3 px-6"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Table Pagination Control Bar -->
+                    <div class="p-6 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
+                        <span id="tablePaginationText">Showing 0 to 0 of 0 logs</span>
+                        <div class="flex items-center space-x-2">
+                            <button id="btnPrevPage" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white flex items-center">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            </button>
+                            <div id="pageSelectorContainer" class="flex items-center space-x-1">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <button id="btnNextPage" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white flex items-center">
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ERROR REPORTING FALLBACK MODAL BANNER -->
+    <div id="corsWarningModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full shadow-2xl p-6 relative">
+            <div class="flex items-center space-x-3 text-amber-600">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+                <h3 class="text-lg font-bold text-slate-900">CORS Policy Active: Local Upload Required</h3>
+            </div>
+            <p class="text-sm text-slate-500 mt-3 leading-relaxed">
+                Browser security rules (CORS) block loading local database assets (CSV) directly via <code>file://</code> URLs.
+            </p>
+            <p class="text-sm text-slate-500 mt-2 leading-relaxed">
+                To connect the dashboard with the full <strong>2,996 records</strong> from <code>water_sports_rental_sales_2026-1.csv</code>:
+            </p>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 my-4 text-xs font-semibold text-slate-700">
+                1. Simply drag & drop the CSV file onto the dashed box in the sidebar.<br>
+                2. Or click the "Upload CSV File" button inside the box to open it locally.
+            </div>
+            <p class="text-xs text-slate-400 mb-4">
+                *The dashboard is currently running on the 20-record sample fallback to prevent breaking.
+            </p>
+            <div class="flex justify-end">
+                <button onclick="dismissCORSWarning()" class="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2 px-4 rounded-lg shadow-sm transition">
+                    Acknowledge & Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CORE BI ENGINE IMPLEMENTATION -->
+    <script>
+        // Global Datasets Store
+        let masterDataset = [];
+        let filteredDataset = [];
+        
+        // Pagination Engine Metrics
+        let currentPage = 1;
+        let pageSize = 25;
+        let searchQuery = '';
+
+        // Chart Instance Register
+        let myChartRevenueTrend = null;
+        let myChartSiteDistribution = null;
+        let myChartItemPopularity = null;
+        let myChartCustomerSegments = null;
+
+        // Fallback Mock Dataset (Exact Original Structure)
+        const sampleFallbackData = [
+            { rentalId: 'WSR-2026-0001', rentalDate: '2026-01-01', month: 'January', dayOfWeek: 'Thursday', season: 'Winter', customerType: 'Resort Guest', rentalItem: 'Fishing Kayak', rentalDuration: '2 Hours', quantity: 1, unitPrice: 50.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 50.00, employeeName: 'Isaac Patel', launchSite: 'Lagoon Launch', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0002', rentalDate: '2026-01-01', month: 'January', dayOfWeek: 'Thursday', season: 'Winter', customerType: 'Group/Event', rentalItem: 'Single Kayak', rentalDuration: '2 Hours', quantity: 1, unitPrice: 38.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 38.00, employeeName: 'Finn Johnson', launchSite: 'Harbor Dock', paymentMethod: 'Credit Card', weather: 'Rainy' },
+            { rentalId: 'WSR-2026-0003', rentalDate: '2026-01-02', month: 'January', dayOfWeek: 'Friday', season: 'Winter', customerType: 'Online Booking', rentalItem: 'Fishing Kayak', rentalDuration: 'Half Day', quantity: 1, unitPrice: 76.00, addon: 'Phone Pouch', addonRevenue: 5.00, discountAmount: 0.00, totalRevenue: 81.00, employeeName: 'Emma Wilson', launchSite: 'Harbor Dock', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0004', rentalDate: '2026-01-02', month: 'January', dayOfWeek: 'Friday', season: 'Winter', customerType: 'Resort Guest', rentalItem: 'Tandem Kayak', rentalDuration: 'Half Day', quantity: 1, unitPrice: 78.00, addon: 'Phone Pouch', addonRevenue: 5.00, discountAmount: 0.00, totalRevenue: 83.00, employeeName: 'Chloe Nguyen', launchSite: 'Beachfront Hut', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0005', rentalDate: '2026-01-02', month: 'January', dayOfWeek: 'Friday', season: 'Winter', customerType: 'Walk-in', rentalItem: 'Paddleboard', rentalDuration: '1 Hour', quantity: 1, unitPrice: 25.00, addon: 'Dry Bag', addonRevenue: 5.00, discountAmount: 0.00, totalRevenue: 30.00, employeeName: 'Finn Johnson', launchSite: 'Marina Kiosk', paymentMethod: 'Cash', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0006', rentalDate: '2026-01-03', month: 'January', dayOfWeek: 'Saturday', season: 'Winter', customerType: 'Walk-in', rentalItem: 'Single Kayak', rentalDuration: '1 Hour', quantity: 1, unitPrice: 24.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 24.00, employeeName: 'Finn Johnson', launchSite: 'Lagoon Launch', paymentMethod: 'Mobile Pay', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0007', rentalDate: '2026-01-03', month: 'January', dayOfWeek: 'Saturday', season: 'Winter', customerType: 'Resort Guest', rentalItem: 'Tandem Kayak', rentalDuration: '2 Hours', quantity: 1, unitPrice: 52.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 52.00, employeeName: 'Emma Wilson', launchSite: 'Beachfront Hut', paymentMethod: 'Credit Card', weather: 'Cloudy' },
+            { rentalId: 'WSR-2026-0008', rentalDate: '2026-01-03', month: 'January', dayOfWeek: 'Saturday', season: 'Winter', customerType: 'Group/Event', rentalItem: 'Single Kayak', rentalDuration: 'Full Day', quantity: 4, unitPrice: 48.00, addon: 'Cooler Rental', addonRevenue: 10.00, discountAmount: 19.20, totalRevenue: 182.80, employeeName: 'Chloe Nguyen', launchSite: 'Lagoon Launch', paymentMethod: 'Credit Card', weather: 'Cloudy' },
+            { rentalId: 'WSR-2026-0009', rentalDate: '2026-01-04', month: 'January', dayOfWeek: 'Sunday', season: 'Winter', customerType: 'Online Booking', rentalItem: 'Paddleboard', rentalDuration: '2 Hours', quantity: 1, unitPrice: 38.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 38.00, employeeName: 'Ben Carter', launchSite: 'Harbor Dock', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0010', rentalDate: '2026-01-04', month: 'January', dayOfWeek: 'Sunday', season: 'Winter', customerType: 'Walk-in', rentalItem: 'Fishing Kayak', rentalDuration: '1 Hour', quantity: 1, unitPrice: 30.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 30.00, employeeName: 'Isaac Patel', launchSite: 'Marina Kiosk', paymentMethod: 'Cash', weather: 'Windy' },
+            { rentalId: 'WSR-2026-0011', rentalDate: '2026-01-05', month: 'January', dayOfWeek: 'Monday', season: 'Winter', customerType: 'Resort Guest', rentalItem: 'Tandem Kayak', rentalDuration: '1 Hour', quantity: 1, unitPrice: 34.00, addon: 'None', addonRevenue: 0.00, discountAmount: 3.40, totalRevenue: 30.60, employeeName: 'Finn Johnson', launchSite: 'Harbor Dock', paymentMethod: 'Credit Card', weather: 'Cloudy' },
+            { rentalId: 'WSR-2026-0012', rentalDate: '2026-01-05', month: 'January', dayOfWeek: 'Monday', season: 'Winter', customerType: 'Online Booking', rentalItem: 'Paddleboard', rentalDuration: 'Half Day', quantity: 1, unitPrice: 56.00, addon: 'Dry Bag', addonRevenue: 5.00, discountAmount: 0.00, totalRevenue: 61.00, employeeName: 'Chloe Nguyen', launchSite: 'Lagoon Launch', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0013', rentalDate: '2026-01-06', month: 'January', dayOfWeek: 'Tuesday', season: 'Winter', customerType: 'Walk-in', rentalItem: 'Single Kayak', rentalDuration: '2 Hours', quantity: 1, unitPrice: 38.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 38.00, employeeName: 'Isaac Patel', launchSite: 'Marina Kiosk', paymentMethod: 'Cash', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0014', rentalDate: '2026-01-07', month: 'January', dayOfWeek: 'Wednesday', season: 'Winter', customerType: 'Resort Guest', rentalItem: 'Fishing Kayak', rentalDuration: 'Half Day', quantity: 1, unitPrice: 76.00, addon: 'Cooler Rental', addonRevenue: 10.00, discountAmount: 0.00, totalRevenue: 86.00, employeeName: 'Emma Wilson', launchSite: 'Beachfront Hut', paymentMethod: 'Mobile Pay', weather: 'Windy' },
+            { rentalId: 'WSR-2026-0015', rentalDate: '2026-01-08', month: 'January', dayOfWeek: 'Thursday', season: 'Winter', customerType: 'Walk-in', rentalItem: 'Paddleboard', rentalDuration: '1 Hour', quantity: 1, unitPrice: 25.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 25.00, employeeName: 'Ben Carter', launchSite: 'Lagoon Launch', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0016', rentalDate: '2026-01-09', month: 'January', dayOfWeek: 'Friday', season: 'Winter', customerType: 'Online Booking', rentalItem: 'Tandem Kayak', rentalDuration: 'Full Day', quantity: 1, unitPrice: 110.00, addon: 'None', addonRevenue: 0.00, discountAmount: 11.00, totalRevenue: 99.00, employeeName: 'Chloe Nguyen', launchSite: 'Harbor Dock', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0017', rentalDate: '2026-01-09', month: 'January', dayOfWeek: 'Friday', season: 'Winter', customerType: 'Group/Event', rentalItem: 'Paddleboard', rentalDuration: '2 Hours', quantity: 2, unitPrice: 38.00, addon: 'Cooler Rental', addonRevenue: 10.00, discountAmount: 8.60, totalRevenue: 77.40, employeeName: 'Emma Wilson', launchSite: 'Lagoon Launch', paymentMethod: 'Credit Card', weather: 'Cloudy' },
+            { rentalId: 'WSR-2026-0018', rentalDate: '2026-01-10', month: 'January', dayOfWeek: 'Saturday', season: 'Winter', customerType: 'Walk-in', rentalItem: 'Single Kayak', rentalDuration: 'Half Day', quantity: 1, unitPrice: 54.00, addon: 'None', addonRevenue: 0.00, discountAmount: 0.00, totalRevenue: 54.00, employeeName: 'Ben Carter', launchSite: 'Marina Kiosk', paymentMethod: 'Cash', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0019', rentalDate: '2026-01-10', month: 'January', dayOfWeek: 'Saturday', season: 'Winter', customerType: 'Online Booking', rentalItem: 'Fishing Kayak', rentalDuration: '2 Hours', quantity: 1, unitPrice: 50.00, addon: 'Phone Pouch', addonRevenue: 5.00, discountAmount: 0.00, totalRevenue: 55.00, employeeName: 'Isaac Patel', launchSite: 'Beachfront Hut', paymentMethod: 'Credit Card', weather: 'Sunny' },
+            { rentalId: 'WSR-2026-0020', rentalDate: '2026-01-10', month: 'January', dayOfWeek: 'Saturday', season: 'Winter', customerType: 'Resort Guest', rentalItem: 'Paddleboard', rentalDuration: 'Full Day', quantity: 1, unitPrice: 85.00, addon: 'Dry Bag', addonRevenue: 5.00, discountAmount: 9.00, totalRevenue: 81.00, employeeName: 'Finn Johnson', launchSite: 'Harbor Dock', paymentMethod: 'Credit Card', weather: 'Sunny' }
+        ];
+
+        // -------------------------------------------------------------
+        // DYNAMIC SOURCING ENGINE & PARSERS
+        // -------------------------------------------------------------
+
+        // Universal Column Header Mapper (Normalizes Column Names dynamically)
+        function mapCsvHeaderToKeys(row) {
+            const keys = Object.keys(row);
+            const findValue = (possibleNames) => {
+                const matchedKey = keys.find(k => possibleNames.includes(k.trim().toLowerCase().replace(/[\s_-]+/g, '')));
+                return matchedKey ? row[matchedKey] : null;
+            };
+            
+            return {
+                rentalId: findValue(['rentalid', 'id', 'bookingid', 'ref']) || 'Unknown-ID',
+                rentalDate: findValue(['rentaldate', 'date', 'day']) || '2026-01-01',
+                month: findValue(['month']) || 'Unknown',
+                dayOfWeek: findValue(['dayofweek', 'weekday']) || 'Unknown',
+                season: findValue(['season']) || 'Unknown',
+                customerType: findValue(['customertype', 'customersegment', 'segment']) || 'Unknown',
+                rentalItem: findValue(['rentalitem', 'item', 'product']) || 'Unknown Item',
+                rentalDuration: findValue(['rentalduration', 'duration']) || 'N/A',
+                quantity: parseInt(findValue(['quantity', 'qty'])) || 1,
+                unitPrice: parseFloat(findValue(['unitprice', 'price'])) || 0.00,
+                addon: findValue(['addon', 'addons', 'accessories']) || 'None',
+                addonRevenue: parseFloat(findValue(['addonrevenue', 'addoncost', 'upsellrevenue'])) || 0.00,
+                discountAmount: parseFloat(findValue(['discountamount', 'discount'])) || 0.00,
+                totalRevenue: parseFloat(findValue(['totalrevenue', 'revenue', 'total', 'sales'])) || 0.00,
+                employeeName: findValue(['employeename', 'employee', 'staff', 'attendant']) || 'Unknown',
+                launchSite: findValue(['launchsite', 'site', 'location']) || 'Unknown Site',
+                paymentMethod: findValue(['paymentmethod', 'payment']) || 'Unknown',
+                weather: findValue(['weather', 'condition']) || 'Unknown'
+            };
+        }
+
+        // Automatic Data Load on Window Initialization
+        window.addEventListener('load', () => {
+            lucide.createIcons();
+            initExportMenuListeners();
+            loadDefaultCSV();
+        });
+
+        // Pull dataset via XMLHTTPRequest / Fetch
+        async function loadDefaultCSV() {
+            setConnectionStatus('loading', 'Loading Database...');
+            try {
+                // Attempting to pull the attached CSV dynamically
+                const response = await fetch('water_sports_rental_sales_2026-1.csv');
+                if (!response.ok) {
+                    throw new Error(`Asset not found on server: Code ${response.status}`);
+                }
+                const csvText = await response.text();
+                parseAndActivateCSV(csvText, 'Server CSV');
+            } catch (err) {
+                console.warn("CORS/Fetch Block Activated. Reverting to Fallback Data Engine.", err);
+                // Switch to sample fallback so dashboard never displays blanks
+                masterDataset = JSON.parse(JSON.stringify(sampleFallbackData));
+                setConnectionStatus('fallback', 'Fallback Mode');
+                document.getElementById('corsWarningModal').classList.remove('hidden');
+                setupFiltersAndRebuild();
+            }
+        }
+
+        // CSV String parser using PapaParse
+        function parseAndActivateCSV(csvString, sourceLabel) {
+            Papa.parse(csvString, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.data && results.data.length > 0) {
+                        masterDataset = results.data.map(mapCsvHeaderToKeys);
+                        setConnectionStatus('connected', `${masterDataset.length.toLocaleString()} Logs`);
+                        setupFiltersAndRebuild();
+                    } else {
+                        console.error("CSV Structure invalid or empty.");
+                        fallbackToMock("Invalid CSV File");
+                    }
+                },
+                error: function(err) {
+                    console.error("PapaParse failed:", err);
+                    fallbackToMock("Parser Failure");
+                }
+            });
+        }
+
+        // Local Upload Drag and Drop Sourcing Event Handlers
+        const dropZone = document.getElementById('dropZone');
+        const manualInput = document.getElementById('manualCsvInput');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-brand-500', 'bg-slate-800/80');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-brand-500', 'bg-slate-800/80');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-brand-500', 'bg-slate-800/80');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                processLocalFile(file);
+            }
+        });
+
+        manualInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) processLocalFile(file);
+        });
+
+        function processLocalFile(file) {
+            setConnectionStatus('loading', 'Loading upload...');
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                parseAndActivateCSV(evt.target.result, file.name);
+                document.getElementById('corsWarningModal').classList.add('hidden'); // Hide CORS error on successful local feed
+            };
+            reader.onerror = function() {
+                fallbackToMock("File Read Error");
+            };
+            reader.readAsText(file);
+        }
+
+        function fallbackToMock(reason) {
+            masterDataset = JSON.parse(JSON.stringify(sampleFallbackData));
+            setConnectionStatus('fallback', `Fallback (${reason})`);
+            setupFiltersAndRebuild();
+        }
+
+        function setConnectionStatus(state, text) {
+            const el = document.getElementById('connectionStatus');
+            el.className = "flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ";
+            let htmlContent = "";
+
+            if (state === 'connected') {
+                el.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
+                htmlContent = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>${text}</span>`;
+            } else if (state === 'loading') {
+                el.classList.add('bg-brand-500/10', 'text-brand-400', 'border', 'border-brand-500/20');
+                htmlContent = `<span class="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span><span>${text}</span>`;
+            } else if (state === 'fallback') {
+                el.classList.add('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/20');
+                htmlContent = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>${text}</span>`;
+            }
+
+            el.innerHTML = htmlContent;
+        }
+
+        function dismissCORSWarning() {
+            document.getElementById('corsWarningModal').classList.add('hidden');
+        }
+
+        // -------------------------------------------------------------
+        // FILTER POPULATION & GENERATION CODES
+        // -------------------------------------------------------------
+
+        function setupFiltersAndRebuild() {
+            populateFilterOptions();
+            currentPage = 1;
+            updateDashboard();
+        }
+
+        function populateFilterOptions() {
+            const selectSite = document.getElementById('filterLaunchSite');
+            const selectWeather = document.getElementById('filterWeather');
+            const selectCustomer = document.getElementById('filterCustomerType');
+            const divSeason = document.getElementById('filterSeason');
+
+            // Save old selected parameters
+            const oldSite = selectSite.value;
+            const oldWeather = selectWeather.value;
+            const oldCustomer = selectCustomer.value;
+
+            // Retain checklist states
+            const activeSeasons = new Set();
+            document.querySelectorAll('#filterSeason input[type=checkbox]:checked').forEach(cb => {
+                activeSeasons.add(cb.value);
+            });
+
+            // Gather Unique Sets from parsed dataset
+            const uniqueSites = [...new Set(masterDataset.map(item => item.launchSite))].filter(Boolean).sort();
+            const uniqueWeather = [...new Set(masterDataset.map(item => item.weather))].filter(Boolean).sort();
+            const uniqueCustomer = [...new Set(masterDataset.map(item => item.customerType))].filter(Boolean).sort();
+            const uniqueSeasons = [...new Set(masterDataset.map(item => item.season))].filter(Boolean).sort();
+
+            // Populate Sites Select Dropdown
+            selectSite.innerHTML = `<option value="ALL">All Launch Sites</option>`;
+            uniqueSites.forEach(val => {
+                selectSite.innerHTML += `<option value="${val}">${val}</option>`;
+            });
+
+            // Populate Weather Select Dropdown
+            selectWeather.innerHTML = `<option value="ALL">All Weather Conditions</option>`;
+            uniqueWeather.forEach(val => {
+                selectWeather.innerHTML += `<option value="${val}">${val}</option>`;
+            });
+
+            // Populate Customers Select Dropdown
+            selectCustomer.innerHTML = `<option value="ALL">All Customer Types</option>`;
+            uniqueCustomer.forEach(val => {
+                selectCustomer.innerHTML += `<option value="${val}">${val}</option>`;
+            });
+
+            // Populate Seasons Checkboxes
+            divSeason.innerHTML = '';
+            uniqueSeasons.forEach(val => {
+                const isChecked = activeSeasons.size === 0 || activeSeasons.has(val) ? 'checked' : '';
+                divSeason.innerHTML += `
+                    <label class="flex items-center space-x-2 text-xs font-semibold text-slate-300 hover:text-white cursor-pointer py-1">
+                        <input type="checkbox" value="${val}" ${isChecked} class="rounded text-brand-500 bg-slate-800 border-slate-700 focus:ring-0">
+                        <span>${val}</span>
+                    </label>
+                `;
+            });
+
+            // Re-bind old choices if they still exist in newly parsed dataset
+            if (uniqueSites.includes(oldSite)) selectSite.value = oldSite;
+            if (uniqueWeather.includes(oldWeather)) selectWeather.value = oldWeather;
+            if (uniqueCustomer.includes(oldCustomer)) selectCustomer.value = oldCustomer;
+
+            // Re-bind change listeners to new season checkboxes
+            document.querySelectorAll('#filterSeason input[type=checkbox]').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    currentPage = 1;
+                    updateDashboard();
+                });
+            });
+        }
+
+        // -------------------------------------------------------------
+        // CORE INTEGRATED DATA-CALCULATION & RE-RENDERING
+        // -------------------------------------------------------------
+
+        function updateDashboard() {
+            // Read active dropdown filters
+            const filterSite = document.getElementById('filterLaunchSite').value;
+            const filterWeather = document.getElementById('filterWeather').value;
+            const filterCustomer = document.getElementById('filterCustomerType').value;
+
+            // Read season checkboxes
+            const checkedSeasons = Array.from(document.querySelectorAll('#filterSeason input[type=checkbox]:checked'))
+                                        .map(cb => cb.value);
+
+            // Cascade Filter Array
+            filteredDataset = masterDataset.filter(item => {
+                if (filterSite !== 'ALL' && item.launchSite !== filterSite) return false;
+                if (filterWeather !== 'ALL' && item.weather !== filterWeather) return false;
+                if (filterCustomer !== 'ALL' && item.customerType !== filterCustomer) return false;
+                if (checkedSeasons.length > 0 && !checkedSeasons.includes(item.season)) return false;
+                
+                // Real-time table text search
+                if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    const matchId = item.rentalId.toLowerCase().includes(query);
+                    const matchItem = item.rentalItem.toLowerCase().includes(query);
+                    const matchEmployee = item.employeeName.toLowerCase().includes(query);
+                    const matchCustomer = item.customerType.toLowerCase().includes(query);
+                    return (matchId || matchItem || matchEmployee || matchCustomer);
+                }
+                
+                return true;
+            });
+
+            // Update badge index counter
+            document.getElementById('recordCountBadge').innerText = `${filteredDataset.length.toLocaleString()} of ${masterDataset.length.toLocaleString()} Rows`;
+            document.getElementById('recordCountBadge').classList.remove('hidden');
+
+            // Recalculate KPIs and regenerate displays
+            calculateKPIs();
+            renderCharts();
+            renderTable();
+        }
+
+        // Helper: Currency formatting (Precision set to 2 decimals)
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+        }
+
+        function calculateKPIs() {
+            const totalRecords = filteredDataset.length;
+
+            if (totalRecords === 0) {
+                document.getElementById('cardTotalSales').innerText = formatCurrency(0);
+                document.getElementById('cardTotalRentals').innerText = '0';
+                document.getElementById('cardAOV').innerText = formatCurrency(0);
+                document.getElementById('cardTotalItems').innerText = '0';
+                document.getElementById('cardAddonRate').innerText = '0.0%';
+                return;
+            }
+
+            let sumSales = 0;
+            let sumQty = 0;
+            let addonCount = 0;
+
+            filteredDataset.forEach(item => {
+                sumSales += item.totalRevenue;
+                sumQty += item.quantity;
+                if (item.addon && item.addon.trim().toLowerCase() !== 'none') {
+                    addonCount++;
+                }
+            });
+
+            const aov = sumSales / totalRecords;
+            const addonRate = (addonCount / totalRecords) * 100;
+
+            // Paint metrics to physical DOM cards
+            document.getElementById('cardTotalSales').innerText = formatCurrency(sumSales);
+            document.getElementById('cardTotalRentals').innerText = totalRecords.toLocaleString();
+            document.getElementById('cardAOV').innerText = formatCurrency(aov);
+            document.getElementById('cardTotalItems').innerText = sumQty.toLocaleString();
+            document.getElementById('cardAddonRate').innerText = `${addonRate.toFixed(1)}%`;
+        }
+
+        // -------------------------------------------------------------
+        // VISUAL CHARTING MODULES (CHART.JS CONFIGURATION)
+        // -------------------------------------------------------------
+
+        function renderCharts() {
+            // Assemble month labels dynamically, ensuring chronological ordering
+            const monthList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            // 1. Chart 1: Revenue Over Time Line Graph
+            const revenueByMonth = {};
+            monthList.forEach(m => revenueByMonth[m] = 0);
+            filteredDataset.forEach(item => {
+                if (revenueByMonth[item.month] !== undefined) {
+                    revenueByMonth[item.month] += item.totalRevenue;
+                }
+            });
+
+            const chart1Labels = monthList;
+            const chart1Data = monthList.map(m => revenueByMonth[m]);
+
+            if (myChartRevenueTrend) myChartRevenueTrend.destroy();
+            const ctx1 = document.getElementById('chartRevenueTrend').getContext('2d');
+            myChartRevenueTrend = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: chart1Labels,
+                    datasets: [{
+                        label: 'Gross Revenue',
+                        data: chart1Data,
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#0284c7',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            ticks: { callback: (v) => '$' + v.toLocaleString() },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Chart 2: Revenue Distribution by Site (Pie/Doughnut)
+            const revBySite = {};
+            filteredDataset.forEach(item => {
+                revBySite[item.launchSite] = (revBySite[item.launchSite] || 0) + item.totalRevenue;
+            });
+            const chart2Labels = Object.keys(revBySite);
+            const chart2Data = Object.values(revBySite);
+
+            if (myChartSiteDistribution) myChartSiteDistribution.destroy();
+            const ctx2 = document.getElementById('chartSiteDistribution').getContext('2d');
+            myChartSiteDistribution = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: chart2Labels,
+                    datasets: [{
+                        data: chart2Data,
+                        backgroundColor: ['#1f4e79', '#0284c7', '#2e7d32', '#ed7d31', '#595959', '#7c3aed'],
+                        borderWidth: 1.5,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 3. Chart 3: Popular Items Horizontal Bar
+            const qtyByItem = {};
+            filteredDataset.forEach(item => {
+                qtyByItem[item.rentalItem] = (qtyByItem[item.rentalItem] || 0) + item.quantity;
+            });
+            // Sort to display top-rented items chronologically downwards
+            const sortedItems = Object.entries(qtyByItem).sort((a,b) => b[1] - a[1]);
+            const chart3Labels = sortedItems.map(x => x[0]);
+            const chart3Data = sortedItems.map(x => x[1]);
+
+            if (myChartItemPopularity) myChartItemPopularity.destroy();
+            const ctx3 = document.getElementById('chartItemPopularity').getContext('2d');
+            myChartItemPopularity = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: chart3Labels,
+                    datasets: [{
+                        data: chart3Data,
+                        backgroundColor: '#ed7d31',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#f1f5f9' }, ticks: { precision: 0 } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 4. Chart 4: Customer Segments Pie
+            const revByCustomer = {};
+            filteredDataset.forEach(item => {
+                revByCustomer[item.customerType] = (revByCustomer[item.customerType] || 0) + item.totalRevenue;
+            });
+            const chart4Labels = Object.keys(revByCustomer);
+            const chart4Data = Object.values(revByCustomer);
+
+            if (myChartCustomerSegments) myChartCustomerSegments.destroy();
+            const ctx4 = document.getElementById('chartCustomerSegments').getContext('2d');
+            myChartCustomerSegments = new Chart(ctx4, {
+                type: 'pie',
+                data: {
+                    labels: chart4Labels,
+                    datasets: [{
+                        data: chart4Data,
+                        backgroundColor: ['#2e7d32', '#7c3aed', '#0284c7', '#ef4444'],
+                        borderWidth: 1.5,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // -------------------------------------------------------------
+        // HIGH PERFORMANCE DOM TABLE RENDERING MODULE
+        // -------------------------------------------------------------
+
+        function renderTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            const totalRecords = filteredDataset.length;
+
+            if (totalRecords === 0) {
+                // Return zero-state clean representation
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="12" class="py-8 text-center text-slate-400 font-medium">
+                            No records found matching current query filters.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('tblTotalQty').innerText = '0';
+                document.getElementById('tblTotalAddon').innerText = formatCurrency(0);
+                document.getElementById('tblTotalSales').innerText = formatCurrency(0);
+                updatePaginationControls(0);
+                return;
+            }
+
+            // Calculate Pagination Indices
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalRecords);
+
+            // Aggregate metrics across the complete FILTERED dataset (Not just active page)
+            let totalQty = 0;
+            let totalAddonVal = 0;
+            let totalSalesVal = 0;
+
+            filteredDataset.forEach(item => {
+                totalQty += item.quantity;
+                totalAddonVal += item.addonRevenue;
+                totalSalesVal += item.totalRevenue;
+            });
+
+            // Splice subset to display on current table page
+            const pageData = filteredDataset.slice(startIndex, endIndex);
+
+            pageData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3 px-6 font-bold text-slate-900">${item.rentalId}</td>
+                    <td class="py-3 px-6 whitespace-nowrap">${item.rentalDate}</td>
+                    <td class="py-3 px-6">${item.customerType}</td>
+                    <td class="py-3 px-6 font-semibold">${item.rentalItem}</td>
+                    <td class="py-3 px-6 whitespace-nowrap">${item.rentalDuration}</td>
+                    <td class="py-3 px-6 text-center">${item.quantity}</td>
+                    <td class="py-3 px-6 text-slate-500">${item.addon || 'None'}</td>
+                    <td class="py-3 px-6 text-right">${formatCurrency(item.addonRevenue)}</td>
+                    <td class="py-3 px-6 text-right font-semibold text-slate-900">${formatCurrency(item.totalRevenue)}</td>
+                    <td class="py-3 px-6 whitespace-nowrap">${item.employeeName}</td>
+                    <td class="py-3 px-6 whitespace-nowrap">${item.launchSite}</td>
+                    <td class="py-3 px-6">${item.weather}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // Update footer metrics
+            document.getElementById('tblTotalQty').innerText = totalQty.toLocaleString();
+            document.getElementById('tblTotalAddon').innerText = formatCurrency(totalAddonVal);
+            document.getElementById('tblTotalSales').innerText = formatCurrency(totalSalesVal);
+
+            // Update Pagination Legend texts
+            document.getElementById('tablePaginationText').innerText = `Showing ${startIndex + 1} to ${endIndex} of ${totalRecords.toLocaleString()} entries`;
+            updatePaginationControls(totalPages);
+        }
+
+        function updatePaginationControls(totalPages) {
+            const container = document.getElementById('pageSelectorContainer');
+            container.innerHTML = '';
+
+            const btnPrev = document.getElementById('btnPrevPage');
+            const btnNext = document.getElementById('btnNextPage');
+
+            btnPrev.disabled = currentPage === 1;
+            btnNext.disabled = currentPage === totalPages || totalPages === 0;
+
+            if (totalPages <= 1) return;
+
+            // Generate condensed responsive pagination blocks
+            let rangeStart = Math.max(1, currentPage - 1);
+            let rangeEnd = Math.min(totalPages, currentPage + 1);
+
+            if (currentPage === 1) {
+                rangeEnd = Math.min(totalPages, 3);
+            } else if (currentPage === totalPages) {
+                rangeStart = Math.max(1, totalPages - 2);
+            }
+
+            for (let i = rangeStart; i <= rangeEnd; i++) {
+                const btn = document.createElement('button');
+                btn.innerText = i;
+                btn.className = `w-8 h-8 rounded-lg text-xs font-bold transition-colors ${i === currentPage ? 'bg-brand-500 text-white' : 'border border-slate-200 hover:bg-slate-50 text-slate-600'}`;
+                btn.addEventListener('click', () => {
+                    currentPage = i;
+                    renderTable();
+                });
+                container.appendChild(btn);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // USER INTERACTIVE EVENT BINDINGS
+        // -------------------------------------------------------------
+
+        // Universal Filter Handlers
+        document.getElementById('filterLaunchSite').addEventListener('change', () => { currentPage = 1; updateDashboard(); });
+        document.getElementById('filterWeather').addEventListener('change', () => { currentPage = 1; updateDashboard(); });
+        document.getElementById('filterCustomerType').addEventListener('change', () => { currentPage = 1; updateDashboard(); });
+
+        // Search inputs
+        document.getElementById('tableSearchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            currentPage = 1;
+            updateDashboard();
+        });
+
+        // Page Size controller selector
+        document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            renderTable();
+        });
+
+        // Previous and Next button clicks
+        document.getElementById('btnPrevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+        document.getElementById('btnNextPage').addEventListener('click', () => {
+            if (currentPage < Math.ceil(filteredDataset.length / pageSize)) {
+                currentPage++;
+                renderTable();
+            }
+        });
+
+        // Reset Filter Trigger Block Click
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('filterLaunchSite').value = 'ALL';
+            document.getElementById('filterWeather').value = 'ALL';
+            document.getElementById('filterCustomerType').value = 'ALL';
+            document.getElementById('tableSearchInput').value = '';
+            searchQuery = '';
+            
+            document.querySelectorAll('#filterSeason input[type=checkbox]').forEach(cb => {
+                cb.checked = true;
+            });
+            
+            currentPage = 1;
+            updateDashboard();
+        });
+
+        // Export Dropdown menu click bindings
+        function initExportMenuListeners() {
+            const btn = document.getElementById('btnExportMenu');
+            const menu = document.getElementById('exportMenu');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', () => {
+                menu.classList.add('hidden');
+            });
+        }
+
+        // -------------------------------------------------------------
+        // EXCEL COMPATIBLE CSV EXPORTS UTILITY CODES
+        // -------------------------------------------------------------
+
+        // Helper: Escapes values containing quotes or commas to prevent Excel breaks
+        function escapeCsvValue(val) {
+            if (val === null || val === undefined) return '';
+            let str = String(val).replace(/"/g, '""');
+            if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+                str = `"${str}"`;
+            }
+            return str;
+        }
+
+        // Download Action Helper
+        function triggerFileDownload(csvContent, filename) {
+            // Include UTF-8 Byte Order Mark (BOM) for complete Excel localization compatibility
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Export Option 1: Filtered Records
+        function exportFilteredCSV() {
+            if (filteredDataset.length === 0) return;
+            
+            const headers = ['Rental ID', 'Rental Date', 'Month', 'Day of Week', 'Season', 'Customer Type', 'Rental Item', 'Rental Duration', 'Quantity', 'Unit Price', 'Add-on', 'Add-on Revenue', 'Discount Amount', 'Total Revenue', 'Employee Name', 'Launch Site', 'Payment Method', 'Weather'];
+            
+            let csvRows = [];
+            csvRows.push(headers.join(','));
+
+            filteredDataset.forEach(item => {
+                const row = [
+                    escapeCsvValue(item.rentalId),
+                    escapeCsvValue(item.rentalDate),
+                    escapeCsvValue(item.month),
+                    escapeCsvValue(item.dayOfWeek),
+                    escapeCsvValue(item.season),
+                    escapeCsvValue(item.customerType),
+                    escapeCsvValue(item.rentalItem),
+                    escapeCsvValue(item.rentalDuration),
+                    item.quantity,
+                    item.unitPrice,
+                    escapeCsvValue(item.addon),
+                    item.addonRevenue,
+                    item.discountAmount,
+                    item.totalRevenue,
+                    escapeCsvValue(item.employeeName),
+                    escapeCsvValue(item.launchSite),
+                    escapeCsvValue(item.paymentMethod),
+                    escapeCsvValue(item.weather)
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            triggerFileDownload(csvRows.join('\n'), 'Water_Sports_Filtered_Sales_Report.csv');
+        }
+
+        // Export Option 2: Active calculated KPIs summary
+        function exportKPISummary() {
+            if (filteredDataset.length === 0) return;
+
+            let sumSales = 0;
+            let sumQty = 0;
+            let addonCount = 0;
+
+            filteredDataset.forEach(item => {
+                sumSales += item.totalRevenue;
+                sumQty += item.quantity;
+                if (item.addon && item.addon.trim().toLowerCase() !== 'none') {
+                    addonCount++;
+                }
+            });
+
+            const totalRentals = filteredDataset.length;
+            const aov = sumSales / totalRentals;
+            const addonRate = (addonCount / totalRentals) * 100;
+
+            const csvContent = [
+                'KPI Metrics Summary Report',
+                `Date Compiled,${new Date().toISOString().split('T')[0]}`,
+                `Filter Scope Size,${totalRentals.toLocaleString()} Rows`,
+                '',
+                'Metric Key,Value',
+                `Total Sales Revenue,${sumSales.toFixed(2)}`,
+                `Total Bookings,${totalRentals}`,
+                `Average Order Value,${aov.toFixed(2)}`,
+                `Total Units Rented,${sumQty}`,
+                `Upsell Attachment Rate %,${addonRate.toFixed(2)}%`
+            ].join('\n');
+
+            triggerFileDownload(csvContent, 'Water_Sports_KPI_Executive_Summary.csv');
+        }
+
+        // Export Option 3: Raw complete Master Dataset
+        function exportFullCSV() {
+            if (masterDataset.length === 0) return;
+            
+            const headers = ['Rental ID', 'Rental Date', 'Month', 'Day of Week', 'Season', 'Customer Type', 'Rental Item', 'Rental Duration', 'Quantity', 'Unit Price', 'Add-on', 'Add-on Revenue', 'Discount Amount', 'Total Revenue', 'Employee Name', 'Launch Site', 'Payment Method', 'Weather'];
+            
+            let csvRows = [];
+            csvRows.push(headers.join(','));
+
+            masterDataset.forEach(item => {
+                const row = [
+                    escapeCsvValue(item.rentalId),
+                    escapeCsvValue(item.rentalDate),
+                    escapeCsvValue(item.month),
+                    escapeCsvValue(item.dayOfWeek),
+                    escapeCsvValue(item.season),
+                    escapeCsvValue(item.customerType),
+                    escapeCsvValue(item.rentalItem),
+                    escapeCsvValue(item.rentalDuration),
+                    item.quantity,
+                    item.unitPrice,
+                    escapeCsvValue(item.addon),
+                    item.addonRevenue,
+                    item.discountAmount,
+                    item.totalRevenue,
+                    escapeCsvValue(item.employeeName),
+                    escapeCsvValue(item.launchSite),
+                    escapeCsvValue(item.paymentMethod),
+                    escapeCsvValue(item.weather)
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            triggerFileDownload(csvRows.join('\n'), 'Water_Sports_Complete_Master_Log.csv');
+        }
+    </script>
+</body>
+</html>
